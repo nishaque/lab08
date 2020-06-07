@@ -1,28 +1,27 @@
-## Laboratory work VII
+## Laboratory work VIII
 
+<a href="https://yandex.ru/efir/?stream_id=v0mnBi_R2Ldw"><img src="https://raw.githubusercontent.com/tp-labs/lab08/master/preview.png" width="640"/></a>
 
-<a href="https://yandex.ru/efir/?stream_id=vDHLoKtKoa3o"><img src="https://raw.githubusercontent.com/tp-labs/lab07/master/preview.png" width="640"/></a>
-
-Данная лабораторная работа посвещена изучению систем управления пакетами на примере **Hunter**
+Данная лабораторная работа посвещена изучению систем автоматизации развёртывания и управления приложениями на примере **Docker**
 
 ```sh
-$ open https://github.com/ruslo/hunter
+$ open https://docs.docker.com/get-started/
 ```
 
 ## Tasks
 
-- [x] 1. Создать публичный репозиторий с названием **lab07** на сервисе **GitHub**
-- [x] 2. Выполнить инструкцию учебного материала
-- [x] 3. Ознакомиться со ссылками учебного материала
+- [x] 1. Создать публичный репозиторий с названием **lab08** на сервисе **GitHub**
+- [x] 2. Ознакомиться со ссылками учебного материала
+- [x] 3. Выполнить инструкцию учебного материала
 - [x] 4. Составить отчет и отправить ссылку личным сообщением в **Slack**
 
 ## Tutorial
+
 Создание переменных среды и установка их значений, а также связывание команд с их "новыми" названиями.
 ```sh
 $ export GITHUB_USERNAME=nishaque
-$ alias gsed=sed
 ```
-Начало работы в каталоге workspace
+Начало работы в каталоге `workspace`
 ```sh
 # Переход в  рабочую директорию
 $ cd ${GITHUB_USERNAME}/workspace
@@ -32,188 +31,164 @@ $ source scripts/activate
 ```
 Настройка git-репозитория **lab07** для работы
 ```sh
-$ git clone https://github.com/${GITHUB_USERNAME}/lab06 projects/lab07
-$ cd projects/lab07
+$ git clone https://github.com/${GITHUB_USERNAME}/lab07 lab08
+$ cd lab08
+# Инциализация подмодуля
+$ git submodule update --init
+
+Submodule 'tools/polly' (https://github.com/ruslo/polly) registered for path 'tools/polly'
+Cloning into '/Users/nishaque/nishaque/workspace/lab08/tools/polly'...
+Submodule path 'tools/polly': checked out '0b3806e193b668fbb9b70c9aa70735b29396323d'
+
+
 $ git remote remove origin
-$ git remote add origin https://github.com/${GITHUB_USERNAME}/lab07
+$ git remote add origin https://github.com/${GITHUB_USERNAME}/lab08
 ```
-Скачивание и подключение модуля `HunterGate`
+Создаем `Dockerfile`. В самом начале указываем базовый образ (В нашем случае это Ubuntu 18.04), который определяет рабочую среду,пакеты и утилиты необходимые для запуска приложения в нашем контейнере. В Dockerfile содержатся инструкции по созданию образа.
 ```sh
-$ mkdir -p cmake # Создание директории где будут храниться файлы Hunter
-# Скачивание данных из файла в удаленном репозитории и их запись в файл HunterGate.cmake
-$ wget https://raw.githubusercontent.com/cpp-pm/gate/master/cmake/HunterGate.cmake -O cmake/HunterGate.cmake
---2020-06-06 20:11:07--  https://raw.githubusercontent.com/cpp-pm/gate/master/cmake/HunterGate.cmake
-Resolving raw.githubusercontent.com (raw.githubusercontent.com)... 151.101.84.133
-Connecting to raw.githubusercontent.com (raw.githubusercontent.com)|151.101.84.133|:443... connected.
-HTTP request sent, awaiting response... 200 OK
-Length: 17070 (17K) [text/plain]
-Saving to: ‘cmake/HunterGate.cmake’
-
-cmake/HunterGate.cm 100%[===================>]  16.67K  --.-KB/s    in 0.03s   
-
-2020-06-06 20:11:07 (498 KB/s) - ‘cmake/HunterGate.cmake’ saved [17070/17070]
-# Добавление HunterGate к CMake
-$ gsed -i "" '/cmake_minimum_required(VERSION 3.4)/a\
-
-include("cmake/HunterGate.cmake")
-HunterGate(
-    URL "https:\//github.com/cpp-pm/hunter/archive/v0.23.251.tar.gz"
-    SHA1 "5659b15dc0884d4b03dbd95710e6a1fa0fc3258d"
-)
-' CMakeLists.txt
-```
-Теперь не нужно скачивать **GTest** самостоятельно. **Hunter** сам подтянет добавленные с помощью функции `hunter_add_package`.
-```sh
-# Удаление подмодуля с GTest
-$ git rm -rf third-party/gtest
-rm 'third-party/gtest'
-# Добавение через hunter пакета gtest и его поиск
-$ gsed -i "" '/set(PRINT_VERSION_STRING "v\${PRINT_VERSION}")/a\
-
-hunter_add_package(GTest)
-find_package(GTest CONFIG REQUIRED)
-' CMakeLists.txt
-# Удаление строки с добавлением поддиректории gtest
-$ gsed -i "" 's/gtest_main/GTest::gtest_main/' CMakeLists.txt
-# Замена обращение к gtest gtest_main на GTest::gtest_main
-$ gsed -i "" 's/gtest_main/GTest::gtest_main/' CMakeLists.txt
-```
-Сборка прокта при помощи **Hunter**.
-```sh
-# Видим как полключаются пакеты при помощи Hanter'a
-$ cmake -H. -B_builds -DBUILD_TESTS=ON
-...
- -- Build files have been written to: /Users/nishaque/nishaque/workspace/projects/lab07/_builds
-
-$ cmake --build _builds
-Scanning dependencies of target print
-[ 50%] Building CXX object CMakeFiles/print.dir/sources/print.cpp.o
-[100%] Linking CXX static library libprint.a
-[100%] Built target print
-
-$ cmake --build _builds --target test
-
-Running tests...
-Test project  /Users/nishaque/nishaque/workspace/projects/lab07/_builds
-    Start 1: check
-1/1 Test #1: check ............................   Passed    0.00 sec
-
-100% tests passed, 0 tests failed out of 1
-
-Total Test time (real) =   0.00 sec
-
-# Вывод файлов из директории .hunter
-$ ls -la $HOME/.hunter
-total 0
-drwxr-xr-x   3 nishaque  staff    96 Mar  4 18:02 .
-drwxr-xr-x+ 42 nishaque  staff  1344 Jun  5 22:38 ..
-drwxr-xr-x   6 nishaque  staff   192 Mar  4 19:37 _Base
-
-```
-Установка **Hunter** в систему
-```sh
-$ git clone https://github.com/cpp-pm/hunter $HOME/nishaque/workspace/projects/hunter
-$ export HUNTER_ROOT=/Users/nishaque/nishaque/workspace/projects/hunter
-$ rm -rf _builds
-$ cmake -H. -B_builds -DBUILD_TESTS=ON
-
--- Build files have been written to: /Users/nishaque/nishaque/workspace/projects/lab07/_builds
-
-$ cmake --build _builds
-$ cmake --build _builds --target test
-```
-Добавление конфигурационного файла в проект, который будет содержать необходимую версию GTest.
-```sh
-# Просмотр дефолтной версии GTest
-$ cat $HUNTER_ROOT/cmake/configs/default.cmake | grep GTest
-  hunter_default_version(GTest VERSION 1.7.0-hunter-6)
-  hunter_default_version(GTest VERSION 1.10.0)
-# Просмотр всех версий GTest, поддерживаемых Hunter'ом
-$ cat $HUNTER_ROOT/cmake/projects/GTest/hunter.cmake
-$ mkdir cmake/Hunter
-# Установка нужной версии GTest
-$ cat > cmake/Hunter/config.cmake <<EOF
-hunter_config(GTest VERSION 1.7.0-hunter-9)
+$ cat > Dockerfile <<EOF
+FROM ubuntu:18.04
 EOF
-# add LOCAL in HunterGate function
 ```
-Добавление файла, использующего библиотеку `print`
+Выполняем обновление списка пакетов **APT** в базовом образе - утилиты для управления пакетами. Затем с его помощью устанавливаем компиляторы и `CMake`.
 ```sh
-$ mkdir demo
-#
-$ cat > demo/main.cpp <<EOF
-#include <print.hpp>
+$ cat >> Dockerfile <<EOF
 
-#include <cstdlib>
-
-int main(int argc, char* argv[])
-{
-  const char* log_path = std::getenv("LOG_PATH");
-  if (log_path == nullptr)
-  {
-    std::cerr << "undefined environment variable: LOG_PATH" << std::endl;
-    return 1;
-  }
-  std::string text;
-  while (std::cin >> text)
-  {
-    std::ofstream out{log_path, std::ios_base::app};
-    print(text, out);
-    out << std::endl;
-  }
-}
+RUN apt update
+RUN apt install -yy gcc g++ cmake
 EOF
-
-$ gsed -i  '/endif()/a\
-
-add_executable(demo ${CMAKE_CURRENT_SOURCE_DIR}/demo/main.cpp)
-target_link_libraries(demo print)
-install(TARGETS demo RUNTIME DESTINATION bin)
-' CMakeLists.txt
 ```
-Добавление подмодуля **polly**, который содержит инструкции для сборки проектов с установленным **Hunter**.
+Инструкция `COPY` сообщает Docker о том, что нужно взять файлы и папки из локального контекста сборки и добавить их в текущую рабочую директорию образа. Если целевая директория не существует, эта инструкция её создаст.
+Инструкция `WORKDIR` позволяет изменить рабочую директорию контейнера.
 ```sh
-$ mkdir tools
-$ git submodule add https://github.com/ruslo/polly tools/polly
-$ tools/polly/bin/polly.py --test
+$ cat >> Dockerfile <<EOF
 
+COPY . print/
+WORKDIR print
+EOF
+```
+Инструкция `RUN` позволяет создать слой во время сборки образа. После её выполнения в образ добавляется новый слой, его состояние фиксируется. Инструкция RUN часто используется для установки в образы дополнительных пакетов.
+```sh
+# Выполняем сборку нашего проекта
+$ cat >> Dockerfile <<EOF
+RUN cmake -H. -B_build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=_install
+RUN cmake --build _build
+RUN cmake --build _build --target install
+EOF
+```
+Инструкция `ENV` позволяет задавать постоянные переменные среды, которые будут доступны в контейнере во время его выполнения.
+```sh
+# Задаем переменную LOG_PATH
+$ cat >> Dockerfile <<EOF
+ENV LOG_PATH /home/logs/log.txt
+EOF
+```
+Инструкция `VOLUME` позволяет указать место, которое контейнер будет использовать для постоянного хранения файлов и для работы с такими файлами.
+```sh
+# Указываем в какой директории будут храниться файлы, которые останутся после работы с контейнером
+$ cat >> Dockerfile <<EOF
+VOLUME /home/logs
+EOF
+```
+Переход в созданную в процессе сборки директорию `_install/bin`
+```sh
+$ cat >> Dockerfile <<EOF
+
+WORKDIR _install/bin
+EOF
+```
+Инструкция `ENTRYPOINT` позволяет задавать команду с аргументами, которая должна выполняться при запуске контейнера. Она похожа на команду `CMD`, но параметры, задаваемые в `ENTRYPOINT`, не перезаписываются в том случае, если контейнер запускают с параметрами командной строки.
+```sh
+# В нащем случае команда ENTRYPOINT опреедляет точку входа в приложение
+$ cat >> Dockerfile <<EOF
+ENTRYPOINT ./demo
+EOF
+```
+Сборка образа с тегом `logger` и путем к `Dockerfile`
+```sh
+$ sudo docker build -t logger .
 ...
-Log saved: /Users/nishaque/nishaque/workspace/projects/lab07/_logs/polly/default/log.txt
--
-Generate: 0:00:04.861035s
-Build: 0:00:01.853576s
-Test: 0:00:00.040277s
--
-Total: 0:00:06.755267s
--
-SUCCESS
+Successfully built ba3db56543df
+Successfully tagged logger:latest
 ```
-Добавим изменения на удаленный репозиторий
+Команда, которая выводит всю информацию об образах
 ```sh
-$ git add .
-$ git commit -m "Add lab"
+REPOSITORY                TAG                 IMAGE ID            CREATED             SIZE
+logger                    latest              3428bfcc1442        3 minutes ago       321MB
+ubuntu                    18.04               c3c304cb4f22        6 weeks ago         64.2MB
+rusdevops/bootstrap-cpp   latest              2596a89150d1        18 months ago       976MB
+```
+Запуск контейнера в интерактивном режиме. Флаг `-v` указывает куда сохранять получаемые в контейнере файлы.
+```sh
+$ mkdir logs
+$ docker run -it -v "$(pwd)/logs/:/home/logs/" logger /bin/bash
+
+text1
+text2
+text3
+<C-D>
+```
+Вывод подробной информации о контейнере
+```sh
+$ docker inspect logger
+```
+Проверяем, что файлы, полученные во время работы в контейнере были сохранены
+```sh
+$ cat logs/log.txt
+text1
+text2
+text3
+```
+Замена lab07 на lab08
+```sh
+$ gsed -i  's/lab07/lab08/g' README.md
+```
+Изменение `.travis.yml` для сборки в контейнере.
+```sh
+$ vim .travis.yml
+/lang<CR>o
+services:
+- docker<ESC>
+jVGdo
+script:
+- docker build -t logger .<ESC>
+:wq
+```
+Добавление **Docker** в репозиторий.
+```sh
+$ git add Dockerfile
+$ git add .travis.yml
+$ git commit -m"adding Dockerfile"
 $ git push origin master
+```
+Активация непрерывной интеграции с **Travis CI**.
+```sh
+# Флаг --com  для работы с travis-ci.com
+$ travis login --auto --com
+Successfully logged in as nishaque!
+$ travis enable --com
+nishaque/lab08: enabled :)
 ```
 
 ## Report
 
 ```sh
+Создание отчета по ЛР № 8
 $ popd
-$ export LAB_NUMBER=07
+$ export LAB_NUMBER=08
 $ git clone https://github.com/tp-labs/lab${LAB_NUMBER} tasks/lab${LAB_NUMBER}
 $ mkdir reports/lab${LAB_NUMBER}
 $ cp tasks/lab${LAB_NUMBER}/README.md reports/lab${LAB_NUMBER}/REPORT.md
 $ cd reports/lab${LAB_NUMBER}
-$ edit REPORT.md
+$ atom REPORT.md
 $ gist REPORT.md
 ```
 
 ## Links
 
-- [Create Hunter package](https://docs.hunter.sh/en/latest/creating-new/create.html)
-- [Custom Hunter config](https://github.com/ruslo/hunter/wiki/example.custom.config.id)
-- [Polly](https://github.com/ruslo/polly)
+- [Book](https://www.dockerbook.com)
+- [Instructions](https://docs.docker.com/engine/reference/builder/)
 
 ```
-Copyright (c) 2015-2020 The ISC Authors
+Copyright (c) 2015-2019 The ISC Authors
 ```
